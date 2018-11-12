@@ -1,0 +1,8 @@
+Reactive Streams is an initiative to provide a standard for asynchronous stream processing with non-blocking back pressure, as can be read on the website. This means that a source can send data to a destination without overwhelming the destination with too much data. The destination will tell the source how much data it can handle. This way, resources are used more efficiently. The Reactive Streams specification wants to set a standard also.
+
+The standard for the JVM is available in GitHub. Summarized, the specification consists of the following items:
+
+Publisher: The publisher is the source that will send the data to one or more subscribers.
+Subscriber: A subscriber will subscribe itself to a publisher, will indicate how much data the publisher may send and will process the data.
+Subscription: On the publisher side, a subscription will be created, which will be shared with a subscriber.
+Processor: A processor can be used to sit between a publisher and a subscriber, this way a transformation of the data can take place.

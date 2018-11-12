@@ -11,5 +11,6 @@
     <packaging>pom</packaging>
     <modules>
         <module>account-reactive</module>
+        <module>rest-consumer</module>
     </modules>
 </project>

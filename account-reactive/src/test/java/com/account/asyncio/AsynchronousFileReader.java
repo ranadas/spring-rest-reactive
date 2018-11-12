@@ -1,0 +1,67 @@
+package com.account.asyncio;
+
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.util.FileCopyUtils;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.AsynchronousFileChannel;
+import java.nio.channels.CompletionHandler;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.util.Collections;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.function.Consumer;
+
+@Slf4j
+public class AsynchronousFileReader implements Reader, CompletionHandler<Integer, ByteBuffer> {
+    private int bytesRead;
+    private long position;
+    private AsynchronousFileChannel fileChannel;
+    private Consumer<BytesPayload> consumer;
+    private final ExecutorService executorService = Executors.newFixedThreadPool(10);
+
+    public void read(File file, Consumer<BytesPayload> payloadConsumer) throws IOException {
+        this.consumer = payloadConsumer;
+        Path path = file.toPath(); // <1>
+        this.fileChannel = AsynchronousFileChannel.open(path,
+                Collections.singleton(StandardOpenOption.READ), this.executorService); // <2>
+        ByteBuffer buffer = ByteBuffer.allocate(FileCopyUtils.BUFFER_SIZE);
+        this.fileChannel.read(buffer, position, buffer, this); // <3>
+        while (this.bytesRead > 0) {
+            this.position = this.position + this.bytesRead;
+            this.fileChannel.read(buffer, this.position, buffer, this);
+        }
+    }
+
+    @Override
+    public void completed(Integer result, ByteBuffer buffer) {
+        log.info("Enterrrrin ............");
+        // <4>
+        this.bytesRead = result;
+
+        if (this.bytesRead < 0)
+            return;
+
+        buffer.flip();
+
+        byte[] data = new byte[buffer.limit()];
+        buffer.get(data);
+
+        // <5>
+        consumer.accept(BytesPayload.from(data, data.length));
+
+        buffer.clear();
+
+        this.position = this.position + this.bytesRead;
+        this.fileChannel.read(buffer, this.position, buffer, this);
+        log.info("Exitinnnnng ............");
+    }
+
+    @Override
+    public void failed(Throwable exc, ByteBuffer attachment) {
+        log.error(exc.getLocalizedMessage());
+    }
+}
